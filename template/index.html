@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Project Description Generator</title>
+  </head>
+  
+  <body>
+    <h1>Project Description Generator</h1>
+    <form method="post">
+      <label for="prompt">Enter a prompt to generate a project description:</label>
+      <textarea id="prompt" name="prompt"></textarea>
+      <button type="submit">Generate Description</button>
+    </form>
+    <h2>Project Description:</h2>
+    <p style="color:white;">{{ description }}</p>
+  </body>
+</html>
