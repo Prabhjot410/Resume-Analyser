@@ -6,23 +6,28 @@ import PyPDF2
 import subprocess
 import textract
 import spacy
+from pyresparser import ResumeParser
+import base64,random
 from textblob import TextBlob
+import pdfplumber
+from spacy.matcher import Matcher
+import docx2txt
 from sklearn.feature_extraction.text import CountVectorizer
 # Install required libraries
 subprocess.check_call(["python", "-m", "pip", "install", "textblob"])
 
 
 # Set up OpenAI API credentials
-openai.api_key = "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"
+openai.api_key = "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"
 
 
 # Set page title and favicon
-st.set_page_config(page_title="Project Description Generator", page_icon=":pencil2:")
+#st.set_page_config(page_title="Project Description Generator", page_icon=":pencil2:")
 
 # Define your CSS styles
 css = """
     body {
-        background-color: blue;
+        background-color: white !important;
     }
     h1 {
         color: white;
@@ -37,6 +42,7 @@ css = """
 """
 # Render your CSS styles using st.markdown
 st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
+
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -70,10 +76,6 @@ def analyze_resume(resume_file):
         temperature=0.5,
     )
     return response.choices[0].text.strip()
-
-
-
-
 
 
 
@@ -165,8 +167,70 @@ def compare_job_description_resume(job_description, resume):
     return suggestions
 
 
+def show_pdf(file_path):
+    with open(file_path, "rb") as f:
+        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+    # pdf_display = f'<embed src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf">'
+    pdf_display = F'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
 
 
+def extract_text(file):
+    file_type = file.name.split(".")[-1]
+    if file_type == "pdf":
+        with pdfplumber.open(file) as pdf:
+            text = ""
+            for page in pdf.pages:
+                text += page.extract_text()
+        return text
+    elif file_type == "docx":
+        text = docx2txt.process(file)
+        return text
+    else:
+        raise ValueError("Unsupported file type")
+    
+    
+
+
+def NAME(resume_text):
+    model_engine = "text-davinci-002"
+    prompt = (f"Extract the name from the given resume:\n"
+              f"{resume_text}\n"
+              f"Name:")
+
+    response = openai.Completion.create(
+        engine=model_engine,
+        prompt=prompt,
+        max_tokens=50,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+
+    name = response.choices[0].text.strip()
+    return name
+
+
+def extract_name(resume_text):
+    # Use spaCy to extract named entities
+    doc = nlp(resume_text)
+    entities = [(ent.text, ent.label_) for ent in doc.ents]
+
+    # Use regex to extract email addresses and phone numbers
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    phone_pattern = r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'
+
+    emails = re.findall(email_pattern, resume_text)
+    phones = re.findall(phone_pattern, resume_text)
+
+    # Find the most probable name based on heuristics
+    name = None
+    for ent in entities:
+        if ent[1] == "PERSON":
+            if name is None or len(ent[0]) > len(name):
+                name = ent[0]
+
+    return name, emails, phones
 
 def app():
     
@@ -238,25 +302,12 @@ def app():
     if st.button("Generate Description"):
         description = generate_project_description(prompt)
         st.markdown("## Project Description:")
-        # Render your CSS styles using st.markdown
-        st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
-
         html_string = """
             <p>{}</p>
         """.format(description)
-        html(html_string)
-        
-
-    
-            
-
-            
-            
+        html(html_string)            
   
 
             
-              
-            
-
 if __name__ == '__main__':
     app()
