@@ -1,0 +1,12 @@
+streamlit
+textblob
+openai
+PyPDF2
+textract
+spacy
+pyresparser
+pdfplumber
+docx2txt
+scikit-learn
+nltk
+
