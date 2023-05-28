@@ -1,6 +1,5 @@
 # Resume Analyser App
 
-<a href="https://resume-analyzer-for-students.azurewebsites.net/">Resume Analyzer for Students</a>
 
 
 ## Features
@@ -24,6 +23,5 @@
   ```
 - `Uploaded_Resumes` folder is contaning the user's uploaded resumes.
 
-## Screenshots
 
-<img src="">
+
