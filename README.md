@@ -21,7 +21,6 @@
   ```
   streamlit run App.py
   ```
-- `Uploaded_Resumes` folder is contaning the user's uploaded resumes.
 
 
 
