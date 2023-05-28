@@ -26,7 +26,7 @@ subprocess.check_call(["python", "-m", "pip", "install", "textblob"])
 
 
 # Set up OpenAI API credentials
-openai.api_key = "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"
+openai.api_key = "ADD YOUR API KEY"
 
 
 
