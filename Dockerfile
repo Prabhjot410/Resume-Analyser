@@ -6,6 +6,8 @@ COPY requirements.txt ./requirements.txt
 
 RUN pip install -r requirements.txt && \
     python -m spacy download en_core_web_sm
+RUN pip install textblob nltk
+RUN python -m textblob.download_corpora
 RUN python -m nltk.downloader stopwords
 COPY . .
 ENTRYPOINT ["streamlit", "run"]

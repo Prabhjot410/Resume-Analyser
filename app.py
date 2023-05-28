@@ -4,9 +4,8 @@ import time
 import openai
 import re
 from streamlit.components.v1 import html
-import PyPDF2
+from PyPDF2 import PdfReader 
 import subprocess
-import textract
 import spacy
 from pyresparser import ResumeParser
 import base64,random
@@ -14,36 +13,22 @@ from textblob import TextBlob
 import pdfplumber
 from spacy.matcher import Matcher
 import docx2txt
-from sklearn.feature_extraction.text import CountVectorizer
+import nltk
+from textblob import TextBlob
+
+# Download the required corpora using NLTK downloader
+nltk.download('averaged_perceptron_tagger')
+
+
+
 # Install required libraries
 subprocess.check_call(["python", "-m", "pip", "install", "textblob"])
 
 
 # Set up OpenAI API credentials
-openai.api_key = "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"
+openai.api_key = "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"
 
 
-# Set page title and favicon
-#st.set_page_config(page_title="Project Description Generator", page_icon=":pencil2:")
-
-# Define your CSS styles
-css = """
-    body {
-        background-color: white !important;
-    }
-    h1 {
-        color: white;
-    }
-    .description {
-        font-size: 20px;
-        color: white;
-    }
-    p{
-        color: white;
-    }
-"""
-# Render your CSS styles using st.markdown
-st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
 
 nlp = spacy.load('en_core_web_sm')
@@ -63,12 +48,12 @@ def extract_keywords(text):
 
  
 def analyze_resume(resume_file):
-    pdf_reader = PyPDF2.PdfFileReader(resume_file)
-    num_pages = pdf_reader.getNumPages()
+    pdf_reader = PdfReader(resume_file)
+    num_pages = len(pdf_reader.pages)
     resume = ""
     for i in range(num_pages):
-        page = pdf_reader.getPage(i)
-        resume += page.extractText()
+        page = pdf_reader.pages[i]
+        resume += page.extract_text()
     response = openai.Completion.create(
         engine="davinci",
         prompt=f"Analyze the following resume:\n{resume}",
@@ -99,11 +84,13 @@ def generate_project_description(prompt):
 
 # Define function to extract text from a PDF file
 def extract_text_from_pdf(pdf_file):
-    pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+    pdf_reader = PdfReader(pdf_file)
     text = ''
-    for page_num in range(pdf_reader.getNumPages()):
-        page = pdf_reader.getPage(page_num)
-        text += page.extractText()
+    num_pages = len(pdf_reader.pages)
+
+    for page_num in range(num_pages):
+        page = pdf_reader.pages[page_num]
+        text += page.extract_text()
     return text
 
 
@@ -250,11 +237,16 @@ def suggest_template(resume_data):
 def main():
     #st.set_page_config(page_title="Resume Suggestion App", page_icon=":pencil2:")
 
-    st.title("Resume Suggestion App")
+    st.title("Resume AnalyzerApp for Students")
 
     st.sidebar.title("Select an option")
 
-    option = st.sidebar.selectbox("", ["User information","Project Description Generator", "Resume Analysis","Resume Score"])
+    option = st.sidebar.selectbox("", ["User information","Resume Score","Resume Analysis","Project Description Generator" ])
+    
+    
+    uploaded_file = st.file_uploader("Upload a resume in PDF format")
+    
+    
 
     if option == "Project Description Generator":
         st.header("Generate Project Descriptions")
@@ -266,14 +258,16 @@ def main():
     elif option == "Resume Analysis":
         st.header("Analyze Resumes")
         job_posting_text = st.text_area("Enter the job description here:")
-        resume_file = st.file_uploader("Upload a resume in PDF format")
+        #resume_file = st.file_uploader("Upload a resume in PDF format")
 
         if st.button("Submit"):
             # Read the PDF file
-            pdf_reader = PyPDF2.PdfFileReader(resume_file)
+            pdf_reader = PdfReader(uploaded_file)
             resume_text = ""
-            for page_num in range(pdf_reader.getNumPages()):
-                resume_text += pdf_reader.getPage(page_num).extractText()
+            num = len(pdf_reader.pages)
+#pdf_reader.pages[page_number]
+            for page_num in range(num):
+                resume_text += pdf_reader.pages[page_num].extract_text()
             resume_skills = extract_skills(resume_text)
             resume_suggestions = compare_job_description_resume(job_posting_text, resume_text)
             st.write("Resume Skills:", resume_skills)
@@ -281,7 +275,7 @@ def main():
             
             
             
-            resume_text = extract_text_from_pdf(resume_file)
+            resume_text = extract_text_from_pdf(uploaded_file)
             
             # Perform keyword matching
             similarity_score = perform_keyword_matching(job_posting_text, resume_text)
@@ -326,10 +320,10 @@ def main():
     elif option == "Resume Score":
         st.header("Resume Sections")     
 
-        resume_file = st.file_uploader("Upload a resume in PDF format")
+        #resume_file = st.file_uploader("Upload a resume in PDF format")
 
-        if resume_file is not None:
-            resume_text = extract_text_from_pdf(resume_file)
+        if uploaded_file is not None:
+            resume_text = extract_text_from_pdf(uploaded_file)
 
             resume_score = 0
             if 'Experience' or 'INTERNSHIP' in resume_text:
@@ -387,7 +381,7 @@ def main():
         
         st.header("Resume Info Extraction")
         # Resume analysis code
-        uploaded_file = st.file_uploader("Upload your resume", type=["pdf", "docx"])
+        #uploaded_file = st.file_uploader("Upload your resume", type=["pdf", "docx"])
         
         if uploaded_file is not None:
             save_image_path = './Uploaded_Resumes/'+uploaded_file.name
